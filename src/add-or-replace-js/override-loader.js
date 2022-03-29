@@ -50,13 +50,59 @@ function overrideLoader() {
     options.xhrMimeType = asset.mine;
     downloadScript(asset.url, options, onComplete)
   }
+  
+  // Image
+  function loadDomImage(url, options, onComplete) {
+	
+	var data = window.res[url].split('---');
+	var mine = data[0]
+	var base64 = data[1];
+
+	var index = url.lastIndexOf('.');
+    var strtype = url.substr(index + 1, 4);
+    strtype = strtype.toLowerCase();
+
+	var mineType;
+	if (strtype == 'png') {
+		mineType = 'data:image/png;base64,';
+	} else if (strtype == 'jpg' || strtype == 'jpeg') {
+		mineType = 'data:image/jpeg;base64,';
+	} else if (strtype == 'webp') {
+		mineType = 'data:image/webp;base64,';
+	}
+
+	var imgStr = mineType + base64;
+    var img = new Image();
+
+    if (window.location.protocol !== 'file:') {
+      img.crossOrigin = 'anonymous';
+    }
+
+    function loadCallback() {
+      img.removeEventListener('load', loadCallback);
+      img.removeEventListener('error', errorCallback);
+      onComplete && onComplete(null, img);
+    }
+
+    function errorCallback() {
+      img.removeEventListener('load', loadCallback);
+      img.removeEventListener('error', errorCallback);
+      onComplete && onComplete(new Error(cc.debug.getError(4930, url)));
+    }
+
+    img.addEventListener('load', loadCallback);
+    img.addEventListener('error', errorCallback);
+    img.src = imgStr;
+    return img;
+  }
 
   var downloadImageWrapper = function (url, options, onComplete) {
     if (cc.sys.hasFeature(cc.sys.Feature.IMAGE_BITMAP) && cc.assetManager.allowImageBitmap) {
       options.xhrResponseType = 'blob';
       cc.assetManager.downloader.downloadFile(url, options, options.onFileProgress, onComplete);
     } else {
-      cc.assetManager.downloader.downloadDomImage(url, options, onComplete);
+      //cc.assetManager.downloader.downloadDomImage(url, options, onComplete);
+	  loadDomImage(url, options, onComplete);
     }
   }
 
