@@ -61,8 +61,16 @@ function overrideLoader() {
   }
 
   var downloadArrayBufferWrapper = function (url, options, onComplete) {
-    options.xhrResponseType = 'arraybuffer';
-    cc.assetManager.downloader.downloadFile(url, options, options.onFileProgress, onComplete);
+    	  var data = window.res[url].split('---');
+	  var mine = data[0]
+	  var base64 = data[1];
+	  var binary_string = window.atob(base64);
+	  var len = binary_string.length;
+	  var bytes = new Uint8Array(len);
+	  for (var i = 0; i < len; i++) {
+		bytes[i] = binary_string.charCodeAt(i);
+	  }
+	  onComplete(null, bytes);
   }
 
   var downloadTextWrapper = function (url, options, onComplete) {
@@ -87,8 +95,16 @@ function overrideLoader() {
 
   var downloadJsonWrapper = function (url, options, onComplete) {
 
-    options.xhrResponseType = 'json';
-    cc.assetManager.downloader.downloadFile(url, options, options.onFileProgress, onComplete)
+    //options.xhrResponseType = 'json';
+    //cc.assetManager.downloader.downloadFile(url, options, options.onFileProgress, onComplete)
+	
+	var data = window.res[url].split('---');
+	var mine = data[0]
+	var base64 = data[1];
+	var binary_string = window.atob(base64);
+
+	var json = JSON.parse(binary_string);
+	onComplete(null, json);
   }
 
   var downloadBundleWrapper = function (url, options, onComplete) {
