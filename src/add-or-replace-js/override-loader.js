@@ -1,22 +1,34 @@
+var cachedAssetUrl = {};
 function getAsset(url) {
    console.log(url)
-  var data = window.res[url].split('---');
-  var mine = data[0]
-  var base64 = data[1];
-  var binary_string = window.atob(base64);
-  var len = binary_string.length;
-  var bytes = new Uint8Array(len);
-  for (var i = 0; i < len; i++) {
-    bytes[i] = binary_string.charCodeAt(i);
-  }
+   if (cachedAssetUrl[url]) {
+	   return {
+		url: cachedAssetUrl[url],
+		mine
+	  };
+   } else {
+	  var data = window.res[url].split('---');
+	  var mine = data[0]
+	  var base64 = data[1];
+	  var binary_string = window.atob(base64);
+	  var len = binary_string.length;
+	  var bytes = new Uint8Array(len);
+	  for (var i = 0; i < len; i++) {
+		bytes[i] = binary_string.charCodeAt(i);
+	  }
 
-  var blob = new Blob([bytes], {
-    type: mine
-  });
-  return {
-    url: URL.createObjectURL(blob),
-    mine
-  };
+	  var blob = new Blob([bytes], {
+		type: mine
+	  });
+	  
+	  var createdUrl = URL.createObjectURL(blob);
+	  cachedAssetUrl[url] = createdUrl;
+	  
+	  return {
+		url: createdUrl,
+		mine
+	  };
+  }
 }
 
 function overrideLoader() {
@@ -176,6 +188,33 @@ function overrideLoader() {
       }
     });
   }
+  
+  if (cc.internal.VideoPlayerImplManager) {
+		function e(e, t, onComplete) {
+			var video = document.createElement("video"), source = document.createElement("source");
+			video.appendChild(source); 
+			source.src = getAsset(e).url;
+			onComplete(null, video);
+		}
+
+		cc.assetManager.downloader.register({
+			".mp4": e,
+			".avi": e,
+			".mov": e,
+			".mpg": e,
+			".mpeg": e,
+			".rm": e,
+			".rmvb": e
+		});
+		const r = cc.internal.VideoPlayerImplManager.getImpl;
+		cc.internal.VideoPlayerImplManager.getImpl = function (url) {
+			const t = r.call(this, url), n = t.createVideoPlayer;
+			return t.createVideoPlayer = function (url) {
+				var t = getAsset(url);
+				return t ? n.call(this, t.url) : n.call(this, url)
+			}, t
+		}
+	}
 
   cc.assetManager.downloader.register({
     '.png': downloadImageWrapper,
